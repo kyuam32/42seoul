@@ -1,0 +1,76 @@
+version: "3.0"
+
+services:
+ nginx:
+  depends_on:
+   - wordpress
+  build: ./requirements/nginx/
+  image: nginx:nlee
+  container_name: nginx
+  env_file: .env
+  ports:
+   - "443:443"
+  restart: unless-stopped
+  volumes:
+   - wordpress:/var/www/wordpress
+  networks:
+   - app-network
+
+ wordpress:
+  depends_on:
+   - redis_cache
+  build: ./requirements/wordpress/
+  image: wordpress:nlee
+  container_name: wordpress
+  env_file: .env
+  expose:
+   - "9000"
+  restart: unless-stopped
+  volumes:
+   - wordpress:/var/www/wordpress
+  networks:
+   - app-network
+
+ redis_cache:
+  depends_on:
+   - mariadb
+  build: ./requirements/bonus/redis/
+  image: redis_cache:nlee
+  container_name: redis_cache
+  env_file: .env
+  expose:
+   - "6379"
+  networks:
+   - app-network  
+
+ mariadb:
+  build:
+   context: ./requirements/mariadb/
+  image: mariadb:nlee
+  env_file: .env
+  container_name: mariadb
+  expose:
+   - "3306"
+  volumes:
+   - dbdata:/var/lib/mysql
+  restart: unless-stopped
+  networks:
+   - app-network
+
+networks:
+ app-network:
+  driver : bridge
+
+volumes:
+ dbdata:
+  driver: local
+  driver_opts:
+   type: none
+   device: /home/nlee/data/dbdata
+   o: bind
+ wordpress:
+  driver: local
+  driver_opts:
+   type: none
+   device: /home/nlee/data/www
+   o: bind
